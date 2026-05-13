@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="首爾">
+  <meta name="theme-color" content="#E8A87C">
+  <title>首爾旅遊地圖 2026</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <button class="back-btn" id="back-btn" style="display:none">←</button>
+    <div class="header-title">
+      <h1 id="header-title">首爾旅遊地圖</h1>
+      <p id="header-sub">5月24日—31日</p>
+    </div>
+  </header>
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+
+    <div class="home-hero">
+      <h2>서울 여행 🇰🇷</h2>
+      <p>口袋地圖 · 按區域探索</p>
+      <div class="dates">📅 2026年 5/24 – 5/31</div>
+    </div>
+
+    <!-- 住宿 -->
+    <div class="accom-chip">
+      <span class="ac-icon">🏠</span>
+      <div class="ac-body">
+        <div class="ac-name">住宿（弘大・新村一帶）</div>
+        <div class="ac-addr">地址待填</div>
+      </div>
+      <a class="kakao-btn" href="https://map.kakao.com/link/map/住宿,37.5569974,126.937875" target="_blank">
+        <span class="kb-icon">🗺</span>
+        <span>Kakao</span>
+      </a>
+    </div>
+
+    <!-- Overview Map -->
+    <div class="overview-map-wrap">
+      <h3>活動範圍總覽</h3>
+      <div class="overview-map">
+        <svg id="overview-svg" viewBox="0 0 390 220" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div style="display:flex;gap:12px;padding:10px 20px 4px;flex-wrap:wrap">
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sub)">
+        <span style="width:10px;height:10px;border-radius:50%;background:#7EC8E3;display:inline-block"></span>逛逛逛
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sub)">
+        <span style="width:10px;height:10px;border-radius:50%;background:#F4A460;display:inline-block"></span>餐廳食物
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sub)">
+        <span style="width:10px;height:10px;border-radius:50%;background:#9B7EC8;display:inline-block"></span>SVT
+      </span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-sub)">
+        <span style="width:10px;height:10px;border-radius:50%;background:#7EC8A0;display:inline-block"></span>PLAVE
+      </span>
+    </div>
+
+    <!-- Region Grid -->
+    <div class="section-label">選擇區域</div>
+    <div class="region-grid" id="region-grid"></div>
+
+  </div><!-- /page-home -->
+
+  <!-- REGION PAGE -->
+  <div class="page" id="page-region">
+
+    <!-- Mini Map -->
+    <div class="region-map-wrap">
+      <svg id="region-svg" viewBox="0 0 390 240" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <!-- Subway Chips -->
+    <div id="subway-chips" class="subway-chips"></div>
+
+    <!-- Category Tabs -->
+    <div id="cat-tabs" class="cat-tabs"></div>
+
+    <!-- Place List -->
+    <div id="place-list" class="place-list"></div>
+
+  </div><!-- /page-region -->
+
+</div><!-- /app -->
+
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
