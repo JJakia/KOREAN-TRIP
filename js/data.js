@@ -12,6 +12,7 @@ const REGIONS = [
     nameKo: "홍대·신촌·합정",
     color: "#F7C59F",
     center: { lat: 37.555, lng: 126.922 },
+    zoomLevel: 4,
     bounds: { minLat: 37.540, maxLat: 37.572, minLng: 126.900, maxLng: 126.945 },
     subways: [
       { name: "홍대입구", line: "2", color: "#00a84d", lat: 37.5573, lng: 126.9248 },
@@ -26,6 +27,7 @@ const REGIONS = [
     nameKo: "성수·뚝섬",
     color: "#C8E6C9",
     center: { lat: 37.543, lng: 127.055 },
+    zoomLevel: 4,
     bounds: { minLat: 37.530, maxLat: 37.558, minLng: 127.030, maxLng: 127.075 },
     subways: [
       { name: "성수", line: "2", color: "#00a84d", lat: 37.5445, lng: 127.0560 },
@@ -38,6 +40,7 @@ const REGIONS = [
     nameKo: "강남·잠실·송파",
     color: "#E1BEE7",
     center: { lat: 37.510, lng: 127.060 },
+    zoomLevel: 5,
     bounds: { minLat: 37.495, maxLat: 37.530, minLng: 127.020, maxLng: 127.115 },
     subways: [
       { name: "강남", line: "2", color: "#00a84d", lat: 37.4979, lng: 127.0276 },
@@ -51,6 +54,7 @@ const REGIONS = [
     nameKo: "경복궁·북촌·인사동",
     color: "#FFECB3",
     center: { lat: 37.578, lng: 126.982 },
+    zoomLevel: 4,
     bounds: { minLat: 37.565, maxLat: 37.592, minLng: 126.968, maxLng: 126.998 },
     subways: [
       { name: "경복궁", line: "3", color: "#ef7c1c", lat: 37.5760, lng: 126.9769 },
@@ -63,6 +67,7 @@ const REGIONS = [
     nameKo: "명동·종로",
     color: "#FFCDD2",
     center: { lat: 37.563, lng: 126.988 },
+    zoomLevel: 4,
     bounds: { minLat: 37.554, maxLat: 37.575, minLng: 126.975, maxLng: 127.005 },
     subways: [
       { name: "명동", line: "4", color: "#00a5de", lat: 37.5606, lng: 126.9854 },
@@ -75,6 +80,7 @@ const REGIONS = [
     nameKo: "여의도",
     color: "#B3E5FC",
     center: { lat: 37.526, lng: 126.928 },
+    zoomLevel: 4,
     bounds: { minLat: 37.518, maxLat: 37.538, minLng: 126.912, maxLng: 126.945 },
     subways: [
       { name: "여의도", line: "5", color: "#9c27b0", lat: 37.5217, lng: 126.9244 },
@@ -87,6 +93,7 @@ const REGIONS = [
     nameKo: "인천",
     color: "#CFD8DC",
     center: { lat: 37.464, lng: 126.370 },
+    zoomLevel: 4,
     bounds: { minLat: 37.450, maxLat: 37.480, minLng: 126.350, maxLng: 126.395 },
     subways: []
   }

@@ -1,155 +1,148 @@
-/* ── APP STATE ── */
-let currentPage = 'home';
+/* ── STATE ── */
 let currentRegion = null;
-let currentCategory = null;
+let currentCategory = 'all';
+let kakaoMap = null;
+let kakaoMarkers = [];
+let kakaoOverlays = [];
 
-/* ── GEO HELPERS ── */
-// Seoul viewport: lat 37.46–37.59, lng 126.88–127.14
-const MAP_BOUNDS = {
-  minLat: 37.46, maxLat: 37.595,
-  minLng: 126.86, maxLng: 127.14
-};
+/* ── KAKAO MAP INIT ── */
+function initKakaoMap(region) {
+  const container = document.getElementById('kakao-map');
 
-function toSVG(lat, lng, w, h, bounds) {
-  const x = (lng - bounds.minLng) / (bounds.maxLng - bounds.minLng) * w;
-  const y = (1 - (lat - bounds.minLat) / (bounds.maxLat - bounds.minLat)) * h;
-  return { x, y };
-}
+  // Region center
+  const center = new kakao.maps.LatLng(region.center.lat, region.center.lng);
 
-/* ── KAKAO MAP URL ── */
-function kakaoUrl(lat, lng, name) {
-  return `https://map.kakao.com/link/map/${encodeURIComponent(name)},${lat},${lng}`;
-}
-
-/* ── RENDER OVERVIEW MAP ── */
-function renderOverviewMap() {
-  const svg = document.getElementById('overview-svg');
-  const W = svg.viewBox.baseVal.width || 390;
-  const H = svg.viewBox.baseVal.height || 220;
-  const B = MAP_BOUNDS;
-
-  let html = '';
-
-  // Draw region blobs
-  REGIONS.forEach(r => {
-    const tl = toSVG(r.bounds.maxLat, r.bounds.minLng, W, H, B);
-    const br = toSVG(r.bounds.minLat, r.bounds.maxLng, W, H, B);
-    const rw = br.x - tl.x, rh = br.y - tl.y;
-    const colorVar = `--region-${r.id}`;
-    html += `<rect x="${tl.x.toFixed(1)}" y="${tl.y.toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}"
-      rx="8" fill="var(${colorVar})" opacity="0.75"
-      data-region="${r.id}" class="region-blob" style="cursor:pointer"/>`;
-    // Label
-    const cx = (tl.x + br.x) / 2, cy = (tl.y + br.y) / 2;
-    html += `<text x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" text-anchor="middle" dominant-baseline="middle"
-      font-size="9" font-weight="700" fill="#3D2B1F" opacity="0.8" pointer-events="none"
-      style="font-family:'Noto Sans TC',sans-serif">${r.name}</text>`;
-  });
-
-  // Accommodation star
-  const acc = toSVG(ACCOMMODATION.lat, ACCOMMODATION.lng, W, H, B);
-  html += `<circle cx="${acc.x.toFixed(1)}" cy="${acc.y.toFixed(1)}" r="8" fill="#E8956D" opacity="0.95"/>`;
-  html += `<text x="${acc.x.toFixed(1)}" y="${acc.y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle"
-    font-size="10" pointer-events="none">🏠</text>`;
-
-  // Place dots
-  PLACES.forEach(p => {
-    const pt = toSVG(p.lat, p.lng, W, H, B);
-    const catColors = { '逛逛逛': '#7EC8E3', '衣食行': '#F4A460', 'SVT': '#9B7EC8', 'PLAVE': '#7EC8A0' };
-    const c = catColors[p.category] || '#aaa';
-    html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="3" fill="${c}" opacity="0.85" pointer-events="none"/>`;
-  });
-
-  svg.innerHTML = html;
-
-  // Click to navigate
-  svg.querySelectorAll('.region-blob').forEach(el => {
-    el.addEventListener('click', () => navigateToRegion(el.dataset.region));
-  });
-}
-
-/* ── RENDER REGION MAP ── */
-function renderRegionMap(region) {
-  const svg = document.getElementById('region-svg');
-  if (!svg) return;
-  const W = 390, H = 240;
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-
-  // Expand bounds a bit for context
-  const pad = 0.008;
-  const B = {
-    minLat: region.bounds.minLat - pad,
-    maxLat: region.bounds.maxLat + pad,
-    minLng: region.bounds.minLng - pad,
-    maxLng: region.bounds.maxLng + pad,
+  const options = {
+    center,
+    level: region.zoomLevel || 4,
   };
 
-  let html = `<rect width="${W}" height="${H}" fill="#EDE0D4"/>`;
-
-  // Region fill
-  const tl = toSVG(region.bounds.maxLat, region.bounds.minLng, W, H, B);
-  const br = toSVG(region.bounds.minLat, region.bounds.maxLng, W, H, B);
-  html += `<rect x="${tl.x.toFixed(1)}" y="${tl.y.toFixed(1)}" width="${(br.x-tl.x).toFixed(1)}" height="${(br.y-tl.y).toFixed(1)}"
-    rx="10" fill="var(--region-${region.id})" opacity="0.5"/>`;
-
-  // Subway stations
-  region.subways.forEach(s => {
-    const pt = toSVG(s.lat, s.lng, W, H, B);
-    html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="7" fill="${s.color}" opacity="0.85"/>`;
-    html += `<text x="${pt.x.toFixed(1)}" y="${(pt.y + 14).toFixed(1)}" text-anchor="middle"
-      font-size="8" fill="#3D2B1F" font-weight="600" opacity="0.9"
-      style="font-family:'Noto Sans KR',sans-serif">${s.name}</text>`;
-  });
-
-  // Accommodation if in region
-  const accInRegion =
-    ACCOMMODATION.lat >= region.bounds.minLat && ACCOMMODATION.lat <= region.bounds.maxLat &&
-    ACCOMMODATION.lng >= region.bounds.minLng && ACCOMMODATION.lng <= region.bounds.maxLng;
-  if (accInRegion) {
-    const apt = toSVG(ACCOMMODATION.lat, ACCOMMODATION.lng, W, H, B);
-    html += `<circle cx="${apt.x.toFixed(1)}" cy="${apt.y.toFixed(1)}" r="10" fill="#E8956D"/>`;
-    html += `<text x="${apt.x.toFixed(1)}" y="${apt.y.toFixed(1)}" text-anchor="middle" dominant-baseline="middle"
-      font-size="12" pointer-events="none">🏠</text>`;
+  // Destroy old map if exists
+  if (kakaoMap) {
+    kakaoMap = null;
+    container.innerHTML = '';
   }
 
-  // Places in this region
-  const regionPlaces = PLACES.filter(p => p.region === region.id);
-  const catColors = { '逛逛逛': '#7EC8E3', '衣食行': '#F4A460', 'SVT': '#9B7EC8', 'PLAVE': '#7EC8A0' };
+  kakaoMap = new kakao.maps.Map(container, options);
 
-  regionPlaces.forEach(p => {
-    const pt = toSVG(p.lat, p.lng, W, H, B);
-    const c = catColors[p.category] || '#aaa';
-    html += `<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="5" fill="${c}" stroke="white" stroke-width="1.5" opacity="0.9"/>`;
-  });
+  // Fit bounds to region
+  const bounds = new kakao.maps.LatLngBounds(
+    new kakao.maps.LatLng(region.bounds.minLat, region.bounds.minLng),
+    new kakao.maps.LatLng(region.bounds.maxLat, region.bounds.maxLng)
+  );
+  kakaoMap.setBounds(bounds);
 
-  svg.innerHTML = html;
+  // Style: disable some controls for cleaner look
+  kakaoMap.setZoomable(true);
+
+  // Draw markers for this region
+  drawMarkers(region, 'all');
 }
 
-/* ── RENDER SUBWAY CHIPS ── */
+/* ── CUSTOM MARKER OVERLAY ── */
+function makeCatColor(cat) {
+  const colors = { '逛逛逛': '#7EC8E3', '衣食行': '#F4A460', 'SVT': '#9B7EC8', 'PLAVE': '#7EC8A0' };
+  return colors[cat] || '#aaa';
+}
+function makeCatIcon(cat) {
+  const icons = { '逛逛逛': '🛍️', '衣食行': '🍽️', 'SVT': '💎', 'PLAVE': '🎮' };
+  return icons[cat] || '📌';
+}
+
+function clearMarkers() {
+  kakaoOverlays.forEach(o => o.setMap(null));
+  kakaoOverlays = [];
+}
+
+function drawMarkers(region, cat) {
+  clearMarkers();
+
+  let places = PLACES.filter(p => p.region === region.id);
+  if (cat && cat !== 'all') places = places.filter(p => p.category === cat);
+
+  places.forEach(p => {
+    const color = makeCatColor(p.category);
+    const icon = makeCatIcon(p.category);
+    const kUrl = `https://map.kakao.com/link/map/${encodeURIComponent(p.nameKo)},${p.lat},${p.lng}`;
+
+    const content = `
+      <div style="
+        position:relative;
+        display:flex; flex-direction:column; align-items:center;
+        cursor:pointer;
+      ">
+        <div style="
+          width:32px; height:32px; border-radius:50%;
+          background:${color}; border:2.5px solid white;
+          box-shadow:0 2px 6px rgba(0,0,0,0.2);
+          display:flex; align-items:center; justify-content:center;
+          font-size:15px;
+        ">${icon}</div>
+        <div style="
+          width:0; height:0;
+          border-left:5px solid transparent;
+          border-right:5px solid transparent;
+          border-top:7px solid ${color};
+          margin-top:-1px;
+        "></div>
+      </div>`;
+
+    const overlay = new kakao.maps.CustomOverlay({
+      position: new kakao.maps.LatLng(p.lat, p.lng),
+      content,
+      yAnchor: 1,
+    });
+
+    overlay.setMap(kakaoMap);
+    kakaoOverlays.push(overlay);
+  });
+
+  // Accommodation marker (home icon) if in this region
+  const a = ACCOMMODATION;
+  const inRegion =
+    a.lat >= region.bounds.minLat && a.lat <= region.bounds.maxLat &&
+    a.lng >= region.bounds.minLng && a.lng <= region.bounds.maxLng;
+
+  if (inRegion) {
+    const homeContent = `
+      <div style="
+        width:38px; height:38px; border-radius:50%;
+        background:#E8956D; border:3px solid white;
+        box-shadow:0 2px 8px rgba(0,0,0,0.25);
+        display:flex; align-items:center; justify-content:center;
+        font-size:18px;
+      ">🏠</div>`;
+    const homeOverlay = new kakao.maps.CustomOverlay({
+      position: new kakao.maps.LatLng(a.lat, a.lng),
+      content: homeContent,
+      yAnchor: 0.5,
+    });
+    homeOverlay.setMap(kakaoMap);
+    kakaoOverlays.push(homeOverlay);
+  }
+}
+
+/* ── SUBWAY CHIPS ── */
 function renderSubwayChips(region) {
   const wrap = document.getElementById('subway-chips');
-  if (!wrap) return;
-  if (region.subways.length === 0) {
-    wrap.innerHTML = `<span style="font-size:12px;color:var(--text-light)">無地鐵站資訊</span>`;
+  if (!region.subways || region.subways.length === 0) {
+    wrap.innerHTML = '';
     return;
   }
   wrap.innerHTML = region.subways.map(s =>
     `<div class="subway-chip">
       <span class="line-dot" style="background:${s.color}"></span>
-      <span>${s.name} (${s.line}號線)</span>
+      <span>${s.name} ${s.line}號線</span>
     </div>`
   ).join('');
 }
 
-/* ── RENDER CATEGORY TABS ── */
+/* ── CATEGORY TABS ── */
 function renderCatTabs(region) {
   const wrap = document.getElementById('cat-tabs');
-  if (!wrap) return;
-
   const regionPlaces = PLACES.filter(p => p.region === region.id);
   const cats = [...new Set(regionPlaces.map(p => p.category))];
 
-  const all = { icon: '🗺️', label: '全部' };
   const catDefs = {
     '逛逛逛': { icon: '🛍️', label: '逛逛逛' },
     '衣食行':  { icon: '🍽️', label: '餐廳食物' },
@@ -158,8 +151,8 @@ function renderCatTabs(region) {
   };
 
   let html = `<div class="cat-tab active" data-cat="all">
-    <span class="ct-icon">${all.icon}</span>
-    <span class="ct-label">${all.label}</span>
+    <span class="ct-icon">🗺️</span>
+    <span class="ct-label">全部</span>
   </div>`;
 
   cats.forEach(c => {
@@ -178,20 +171,18 @@ function renderCatTabs(region) {
       wrap.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       currentCategory = tab.dataset.cat;
-      renderPlaceList(region, currentCategory);
+      drawMarkers(currentRegion, currentCategory);
+      renderPlaceList(currentRegion, currentCategory);
     });
   });
 }
 
-/* ── RENDER PLACE LIST ── */
+/* ── PLACE LIST ── */
 function renderPlaceList(region, cat) {
   const wrap = document.getElementById('place-list');
-  if (!wrap) return;
-
   let places = PLACES.filter(p => p.region === region.id);
   if (cat && cat !== 'all') places = places.filter(p => p.category === cat);
 
-  const catIcons = { '逛逛逛': '🛍️', '衣食行': '🍽️', 'SVT': '💎', 'PLAVE': '🎮' };
   const catBg = { '逛逛逛': '#E3F5FB', '衣食行': '#FEF3E2', 'SVT': '#F0EBF8', 'PLAVE': '#E8F5EC' };
 
   if (places.length === 0) {
@@ -200,17 +191,17 @@ function renderPlaceList(region, cat) {
   }
 
   wrap.innerHTML = places.map((p, i) => {
-    const icon = catIcons[p.category] || '📌';
+    const icon = makeCatIcon(p.category);
     const bg = catBg[p.category] || '#f5f5f5';
+    const kUrl = `https://map.kakao.com/link/map/${encodeURIComponent(p.nameKo)},${p.lat},${p.lng}`;
     const addrHtml = p.address
       ? `<div class="place-card-address">📍 ${p.address}</div>`
       : `<div class="place-card-address empty">地址待填</div>`;
     const noteHtml = p.note
       ? `<div class="place-card-note ${p.note.includes('BOOKED') ? 'booked' : ''}">${p.note}</div>`
       : '';
-    const kUrl = kakaoUrl(p.lat, p.lng, p.nameKo);
 
-    return `<div class="place-card" style="animation-delay:${i * 0.04}s">
+    return `<div class="place-card" style="animation-delay:${i * 0.035}s">
       <div class="place-card-icon" style="background:${bg}">${icon}</div>
       <div class="place-card-body">
         <div class="place-card-names">
@@ -220,72 +211,28 @@ function renderPlaceList(region, cat) {
         ${addrHtml}
         ${noteHtml}
       </div>
-      <a class="kakao-btn" href="${kUrl}" target="_blank" rel="noopener">
-        <span class="kb-icon">🗺</span>
-        <span>Kakao</span>
-      </a>
+      <a class="place-kakao-btn" href="${kUrl}" target="_blank" rel="noopener" title="在Kakao Map查看">🗺️</a>
     </div>`;
   }).join('');
 }
 
-/* ── NAVIGATION ── */
-function navigateToRegion(regionId) {
-  const region = REGIONS.find(r => r.id === regionId);
-  if (!region) return;
-  currentRegion = region;
-
-  // Update region page header
-  document.getElementById('region-title').textContent = region.name;
-  document.getElementById('region-subtitle').textContent = region.nameKo;
-
-  // Render components
-  renderRegionMap(region);
-  renderSubwayChips(region);
-  renderCatTabs(region);
-  renderPlaceList(region, 'all');
-
-  // Switch page
-  showPage('region');
-}
-
-function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById(`page-${pageId}`).classList.add('active');
-
-  // Header
-  const backBtn = document.getElementById('back-btn');
-  if (pageId === 'home') {
-    backBtn.style.display = 'none';
-    document.getElementById('header-title').textContent = '首爾旅遊地圖';
-    document.getElementById('header-sub').textContent = '5月24日—31日';
-  } else {
-    backBtn.style.display = 'flex';
-  }
-
-  currentPage = pageId;
-}
-
-/* ── REGION CARD COUNT ── */
-function getRegionCount(regionId) {
-  return PLACES.filter(p => p.region === regionId).length;
-}
-
-/* ── RENDER HOME REGION GRID ── */
+/* ── REGION GRID ── */
 function renderRegionGrid() {
   const grid = document.getElementById('region-grid');
   const catColors = { '逛逛逛': '#7EC8E3', '衣食行': '#F4A460', 'SVT': '#9B7EC8', 'PLAVE': '#7EC8A0' };
 
   grid.innerHTML = REGIONS.map(r => {
-    const count = getRegionCount(r.id);
+    const count = PLACES.filter(p => p.region === r.id).length;
     const cats = [...new Set(PLACES.filter(p => p.region === r.id).map(p => p.category))];
-    const dots = cats.map(c => `<span class="rc-dot" style="background:${catColors[c]}"></span>`).join('');
+    const dots = cats.map(c =>
+      `<span class="rc-cat-dot" style="background:${catColors[c]}"></span>`
+    ).join('');
 
-    return `<div class="region-card" data-region="${r.id}"
-        style="border-top-color:var(--region-${r.id})">
-      <div style="position:absolute;top:0;left:0;right:0;height:4px;background:var(--region-${r.id});border-radius:8px 8px 0 0"></div>
+    return `<div class="region-card" data-region="${r.id}">
+      <div class="rc-color-bar" style="background:var(--region-${r.id})"></div>
       <div class="rc-name">${r.name}</div>
       <div class="rc-ko">${r.nameKo}</div>
-      <div class="rc-count">${dots}${count} 個地點</div>
+      <div class="rc-count">${dots} ${count} 個地點</div>
     </div>`;
   }).join('');
 
@@ -294,24 +241,48 @@ function renderRegionGrid() {
   });
 }
 
+/* ── NAVIGATION ── */
+function navigateToRegion(regionId) {
+  const region = REGIONS.find(r => r.id === regionId);
+  if (!region) return;
+  currentRegion = region;
+
+  document.getElementById('header-title').textContent = region.name;
+  document.getElementById('header-sub').textContent = region.nameKo;
+  document.getElementById('back-btn').style.display = 'flex';
+
+  showPage('region');
+
+  // Init map after page is visible
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      initKakaoMap(region);
+      renderSubwayChips(region);
+      renderCatTabs(region);
+      renderPlaceList(region, 'all');
+    }, 80);
+  });
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(`page-${pageId}`).classList.add('active');
+}
+
 /* ── INIT ── */
 document.addEventListener('DOMContentLoaded', () => {
-  // Service worker
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 
   document.getElementById('back-btn').addEventListener('click', () => {
     showPage('home');
+    document.getElementById('header-title').textContent = '首爾旅遊地圖';
+    document.getElementById('header-sub').textContent = '5月24日—31日';
+    document.getElementById('back-btn').style.display = 'none';
+    clearMarkers();
+    kakaoMap = null;
   });
 
   renderRegionGrid();
-  showPage('home');
-
-  // Defer map render after layout
-  requestAnimationFrame(() => {
-    const svg = document.getElementById('overview-svg');
-    svg.setAttribute('viewBox', '0 0 390 220');
-    renderOverviewMap();
-  });
 });
