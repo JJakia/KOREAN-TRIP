@@ -136,7 +136,7 @@ function renderPlaceList(region, cat) {
 
   wrap.innerHTML = places.map((p, i) => {
     const meta  = CAT_META[p.category] || { icon: '📌', bg: '#f5f5f5' };
-    const kUrl  = `https://map.kakao.com/link/map/${encodeURIComponent(p.nameKo)},${p.lat},${p.lng}`;
+    const kUrl  = p.naverUrl || `https://map.naver.com/p/search/${encodeURIComponent(p.nameKo)}`;
     const addr  = p.address
       ? `<div class="place-address">📍 ${p.address}</div>`
       : `<div class="place-address empty">地址待填</div>`;
@@ -151,9 +151,9 @@ function renderPlaceList(region, cat) {
         <div class="place-name-ko">${p.nameKo}</div>
         ${addr}${note}
       </div>
-      <a class="kakao-btn" href="${kUrl}" target="_blank" rel="noopener">
-        <span class="kakao-btn-icon">🗺</span>
-        <span>在 Kakao<br>Map 查看</span>
+      <a class="naver-btn" href="${kUrl}" target="_blank" rel="noopener">
+        <span class="naver-btn-icon">🗺</span>
+        <span>在 Naver<br>Map 查看</span>
       </a>
     </div>`;
   }).join('');
