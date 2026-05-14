@@ -1,4 +1,7 @@
 /* ── STATE ── */
+let kakaoReady = false;
+let kakaoMap   = null;
+let mapMarkers = [];
 let currentRegion   = null;
 let currentCategory = 'all';
 
@@ -16,6 +19,74 @@ const CAT_META = {
 const MARKER_COLORS = {
   '逛逛逛': '#6EC6E6', '衣食行': '#F0A060', 'SVT': '#9B7EC8', 'PLAVE': '#6DC894',
 };
+
+/* ── KAKAO SDK LOADER ── */
+async function ensureKakao() {
+  if (kakaoReady) return;
+  await loadKakaoMap();
+  kakaoReady = true;
+}
+
+/* ── MARKERS ── */
+function clearMarkers() {
+  mapMarkers.forEach(m => { try { m.setMap(null); } catch(e){} });
+  mapMarkers = [];
+}
+
+function addMarkers(region, cat) {
+  clearMarkers();
+  if (!kakaoMap) return;
+
+  let places = PLACES.filter(p => p.region === region.id);
+  if (cat !== 'all') places = places.filter(p => p.category === cat);
+
+  places.forEach(p => {
+    const color = MARKER_COLORS[p.category] || '#aaa';
+    const icon  = CAT_META[p.category]?.icon || '📌';
+    const content = `<div style="width:30px;height:30px;border-radius:50%;background:${color};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">${icon}</div>`;
+    const overlay = new kakao.maps.CustomOverlay({
+      map: kakaoMap,
+      position: new kakao.maps.LatLng(p.lat, p.lng),
+      content,
+      yAnchor: 1,
+    });
+    mapMarkers.push(overlay);
+  });
+
+  // 住宿 marker
+  if (
+    ACCOMMODATION.lat >= region.bounds.minLat && ACCOMMODATION.lat <= region.bounds.maxLat &&
+    ACCOMMODATION.lng >= region.bounds.minLng && ACCOMMODATION.lng <= region.bounds.maxLng
+  ) {
+    const accContent = `<div style="width:34px;height:34px;border-radius:50%;background:#E8956D;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">🏠</div>`;
+    mapMarkers.push(new kakao.maps.CustomOverlay({
+      map: kakaoMap,
+      position: new kakao.maps.LatLng(ACCOMMODATION.lat, ACCOMMODATION.lng),
+      content: accContent,
+      yAnchor: 1,
+    }));
+  }
+}
+
+/* ── MAP INIT：每次都重建，避免 iOS container 問題 ── */
+async function initMap(region) {
+  await ensureKakao();
+
+  // 每次都清空 container 重建，確保 iOS 正確渲染
+  const container = document.getElementById('kakao-map');
+  container.innerHTML = '';
+  kakaoMap = null;
+
+  const center = new kakao.maps.LatLng(region.center.lat, region.center.lng);
+  const level  = region.id === 'incheon' ? 6 : 5;
+
+  kakaoMap = new kakao.maps.Map(container, { center, level });
+
+  // 等地圖 idle 後再放 markers，確保渲染完成
+  kakao.maps.event.addListenerOnce(kakaoMap, 'idle', () => {
+    addMarkers(region, currentCategory);
+  });
+}
 
 /* ── SUBWAY CHIPS ── */
 function renderSubwayChips(region) {
@@ -106,7 +177,7 @@ async function navigateToRegion(regionId) {
     renderSubwayChips(region);
     renderCatTabs(region);
     renderPlaceList(region, 'all');
-    renderMap(region);
+    initMap(region);
   });
 }
 
@@ -150,26 +221,9 @@ function renderRegionGrid() {
 document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   document.getElementById('back-btn').addEventListener('click', () => {
+    clearMarkers();
     currentCategory = 'all';
     showPage('home');
   });
   renderRegionGrid();
 });
-
-/* ── GOOGLE MY MAPS IFRAME ── */
-function renderMap(region) {
-  const container = document.getElementById('kakao-map');
-  const lat = region.center.lat;
-  const lng = region.center.lng;
-  const zoom = region.id === 'incheon' ? 12 : 14;
-  // 用你的 My Maps mid，加上 ll (center) 和 z (zoom) 讓地圖對焦到該區域
-  const mid = '1HgZF4C_vqsJayCAhpXOLC_Tmr1PZaSg';
-  container.innerHTML = `<iframe
-    src="https://www.google.com/maps/d/u/0/embed?mid=${mid}&ll=${lat},${lng}&z=${zoom}&ehbc=2E312F"
-    width="100%" height="100%"
-    style="border:0;display:block;"
-    allowfullscreen=""
-    loading="lazy"
-    referrerpolicy="no-referrer-when-downgrade">
-  </iframe>`;
-}
