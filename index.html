@@ -78,21 +78,6 @@
 
 </div>
 
-<script>
-// 確保用 https:// 且 autoload=false，手動控制載入時機
-function loadKakaoMap() {
-  return new Promise((resolve, reject) => {
-    if (window.kakao && window.kakao.maps) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=80a4afa6bdeb8635d40f16450b4deb39&autoload=false';
-    s.onload = () => {
-      kakao.maps.load(() => resolve());
-    };
-    s.onerror = () => reject(new Error('Kakao SDK load failed'));
-    document.head.appendChild(s);
-  });
-}
-</script>
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>
 </body>
