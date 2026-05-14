@@ -3,65 +3,100 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="首爾">
-  <meta name="theme-color" content="#E8A87C">
-  <title>首爾旅遊地圖 2026</title>
+  <meta name="apple-mobile-web-app-title" content="首爾小旅行">
+  <meta name="theme-color" content="#F5EFE6">
+  <title>首爾小旅行</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
-  <script type="text/javascript" src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=3eb3a89a2d6afc377a00a63d59d42dce&libraries=services"></script>
 </head>
 <body>
 <div id="app">
 
-  <header class="app-header">
-    <button class="back-btn" id="back-btn" style="display:none">←</button>
-    <div class="header-title">
-      <h1 id="header-title">首爾旅遊地圖</h1>
-      <p id="header-sub">5月24日—31日</p>
-    </div>
-  </header>
-
-  <!-- HOME PAGE -->
+  <!-- ═══ HOME PAGE ═══ -->
   <div class="page active" id="page-home">
-    <div class="home-hero">
-      <h2>서울 여행 🇰🇷</h2>
-      <p>口袋地圖 · 按區域探索</p>
-      <div class="dates">📅 2026年 5/24 – 5/31</div>
-    </div>
+    <div class="home-inner">
 
-    <div class="accom-chip">
-      <span class="ac-icon">🏠</span>
-      <div class="ac-body">
-        <div class="ac-name">住宿（弘大・新村一帶）</div>
-        <div class="ac-addr">地址待填</div>
+      <!-- Header -->
+      <div class="home-header">
+        <div class="home-header-left">
+          <div class="app-title">首爾小旅行 <span class="heart">♡</span></div>
+          <div class="app-sub">一起去喜歡的地方吧！</div>
+        </div>
+        <div class="header-icon">🗺️</div>
       </div>
-      <a class="kakao-icon-btn" href="https://map.kakao.com/link/map/住宿,37.5569974,126.937875" target="_blank" rel="noopener" title="在Kakao Map查看">🗺️</a>
-    </div>
 
-    <div class="section-label">選擇區域 → 查看地圖</div>
-    <div class="region-grid" id="region-grid"></div>
+      <!-- 住宿卡片 -->
+      <div class="accom-card">
+        <div class="accom-card-icon">🛏️</div>
+        <div class="accom-card-body">
+          <div class="accom-label">住宿位置</div>
+          <div class="accom-name" id="accom-name">弘大・新村一帶</div>
+          <div class="accom-addr" id="accom-addr">Seoul, Korea</div>
+        </div>
+        <div class="accom-illus">🏠</div>
+      </div>
 
-    <div class="legend-row">
-      <span class="legend-item"><span class="legend-dot" style="background:#7EC8E3"></span>逛逛逛</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#F4A460"></span>餐廳食物</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#9B7EC8"></span>SVT</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#7EC8A0"></span>PLAVE</span>
+      <!-- 選擇區域 -->
+      <div class="section-title">選擇區域</div>
+      <div class="region-grid" id="region-grid"></div>
+
+      <!-- 地鐵線路圖 -->
+      <div class="section-title" style="margin-top:4px">
+        地鐵路線圖 <span style="font-size:16px">🚇</span>
+      </div>
+      <div class="subway-map-card">
+        <div class="subway-map-inner" id="subway-map-svg"></div>
+      </div>
+
     </div>
   </div>
 
-  <!-- REGION PAGE -->
+  <!-- ═══ REGION PAGE ═══ -->
   <div class="page" id="page-region">
+
+    <!-- Top bar -->
+    <div class="region-topbar">
+      <button class="back-btn" id="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="region-topbar-title" id="region-topbar-title">區域</div>
+      <div style="width:36px"></div>
+    </div>
+
+    <!-- Kakao Map -->
     <div id="kakao-map"></div>
+
+    <!-- 地鐵站 chips -->
     <div id="subway-chips" class="subway-chips"></div>
+
+    <!-- 分類 tabs -->
     <div id="cat-tabs" class="cat-tabs"></div>
+
+    <!-- 地點列表 -->
     <div id="place-list" class="place-list"></div>
+
   </div>
 
 </div>
 
+<!-- Kakao Maps SDK -->
+<script>
+// Load Kakao Maps after page load to avoid blocking
+function loadKakaoMap() {
+  return new Promise((resolve, reject) => {
+    if (window.kakao && window.kakao.maps) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=80a4afa6bdeb8635d40f16450b4deb39&autoload=false';
+    s.onload = () => kakao.maps.load(resolve);
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+</script>
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>
 </body>
