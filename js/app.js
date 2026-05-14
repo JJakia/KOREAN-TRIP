@@ -156,15 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
   renderRegionGrid();
 });
 
-/* ── GOOGLE MAP IFRAME ── */
+/* ── GOOGLE MY MAPS IFRAME ── */
 function renderMap(region) {
   const container = document.getElementById('kakao-map');
-  // Google Maps embed - 用區域中心座標，zoom 15
   const lat = region.center.lat;
   const lng = region.center.lng;
-  const zoom = region.id === 'incheon' ? 14 : 15;
+  const zoom = region.id === 'incheon' ? 12 : 14;
+  // 用你的 My Maps mid，加上 ll (center) 和 z (zoom) 讓地圖對焦到該區域
+  const mid = '1HgZF4C_vqsJayCAhpXOLC_Tmr1PZaSg';
   container.innerHTML = `<iframe
-    src="https://maps.google.com/maps?q=${lat},${lng}&z=${zoom}&output=embed&hl=ko"
+    src="https://www.google.com/maps/d/u/0/embed?mid=${mid}&ll=${lat},${lng}&z=${zoom}&ehbc=2E312F"
     width="100%" height="100%"
     style="border:0;display:block;"
     allowfullscreen=""
