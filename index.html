@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#F5EFE6">
   <title>首爾小旅行</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
@@ -30,27 +31,21 @@
       </div>
 
       <!-- 住宿卡片 -->
-      <div class="accom-card">
+      <a class="accom-card"
+         href="https://map.kakao.com/link/map/住宿,37.5569974,126.937875"
+         target="_blank" rel="noopener">
         <div class="accom-card-icon">🛏️</div>
         <div class="accom-card-body">
-          <div class="accom-label">住宿位置</div>
-          <div class="accom-name" id="accom-name">弘大・新村一帶</div>
-          <div class="accom-addr" id="accom-addr">Seoul, Korea</div>
+          <div class="accom-label">住宿位置 · 點擊在 Kakao Map 查看</div>
+          <div class="accom-name">弘大・新村一帶</div>
+          <div class="accom-addr">Seoul, Korea</div>
         </div>
         <div class="accom-illus">🏠</div>
-      </div>
+      </a>
 
       <!-- 選擇區域 -->
       <div class="section-title">選擇區域</div>
       <div class="region-grid" id="region-grid"></div>
-
-      <!-- 地鐵線路圖 -->
-      <div class="section-title" style="margin-top:4px">
-        地鐵路線圖 <span style="font-size:16px">🚇</span>
-      </div>
-      <div class="subway-map-card">
-        <div class="subway-map-inner" id="subway-map-svg"></div>
-      </div>
 
     </div>
   </div>
@@ -83,16 +78,17 @@
 
 </div>
 
-<!-- Kakao Maps SDK -->
 <script>
-// Load Kakao Maps after page load to avoid blocking
+// 確保用 https:// 且 autoload=false，手動控制載入時機
 function loadKakaoMap() {
   return new Promise((resolve, reject) => {
     if (window.kakao && window.kakao.maps) { resolve(); return; }
     const s = document.createElement('script');
-    s.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=80a4afa6bdeb8635d40f16450b4deb39&autoload=false';
-    s.onload = () => kakao.maps.load(resolve);
-    s.onerror = reject;
+    s.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=80a4afa6bdeb8635d40f16450b4deb39&autoload=false';
+    s.onload = () => {
+      kakao.maps.load(() => resolve());
+    };
+    s.onerror = () => reject(new Error('Kakao SDK load failed'));
     document.head.appendChild(s);
   });
 }

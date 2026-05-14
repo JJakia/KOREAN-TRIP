@@ -79,7 +79,7 @@ html, body {
 .header-icon { font-size: 32px; }
 
 /* 住宿卡片 */
-.accom-card {
+.accom-card-REPLACED {
   background: var(--surface);
   border-radius: var(--radius);
   padding: 16px 18px;
@@ -292,3 +292,20 @@ html, body {
   text-align: center; padding: 32px 16px;
   color: var(--text-lt); font-size: 13px; line-height: 1.7;
 }
+
+/* accom card as tappable link */
+.accom-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 12px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 22px;
+  position: relative; overflow: hidden;
+  text-decoration: none; color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s;
+  cursor: pointer;
+}
+.accom-card:active { transform: scale(0.98); }
+.accom-label { font-size: 10px; color: var(--accent2); font-weight: 600; letter-spacing: 0.3px; }
